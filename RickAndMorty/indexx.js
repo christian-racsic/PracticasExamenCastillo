@@ -2,14 +2,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     const container = document.querySelector("#container");
     container.classList.add("row", "g-4");
 
-    const limit = 10;
+    const limit = 20;
     let currentPage = 0;
     let result = await getCountries();
 
     async function getCountries() {
-        let response = await fetch("https://rickandmortyapi.com/api/character");
-        let data = await response.json();
-        return data.results.sort((a, b) => (a.name> b.name ? 1 : -1));
+        let allCharacters = [];
+        let response;
+        let nextUrl = "https://rickandmortyapi.com/api/character";
+
+        do {
+            response = await fetch(nextUrl);
+            let data = await response.json();
+            allCharacters = allCharacters.concat(data.results);
+            nextUrl = data.info.next;
+        } while (nextUrl);
+
+        return allCharacters.sort((a, b) => (a.name > b.name ? 1 : -1));
     }
 
     async function renderCountries(page = currentPage) {
@@ -22,17 +31,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginatedData.forEach(element => {
             let divCharacter = document.createElement("div");
             divCharacter.classList.add("col-md-3");
-            divCharacter.innerHTML =   `
+            divCharacter.innerHTML = `
                 <div class="card h-100" style="width: 18rem;">
-                    <img src="${element.image}" class="card-img-top country-img" style="height: 200px; object-fit: cover;" alt="Bandera de ${element.name.common}">
+                    <img src="${element.image}" class="card-img-top country-img" style="height: 200px; object-fit: cover;" alt="${element.name}">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${element.name}</h5>
-                        <button class="btn btn-primary mt-auto">Details</button>
+                        <button class="btn btn-primary mt-auto" ">Details</button>
                     </div>
                 </div>
-            ` ;
-            /* divCharacter.querySelector("button").addEventListener("click", () => renderCountryDetails(element)); */
-            //
+            `;
+            divCharacter.querySelector("button").addEventListener("click", () => renderCountryDetails(element));
             container.appendChild(divCharacter);
         });
 
@@ -72,54 +80,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function renderCountryDetails(element) {
         container.innerHTML = "";
-        const leng = Object.values(element.languages);
-        const capitalDiv = document.createElement("div");
-        capitalDiv.innerHTML = "";/* "`
+        const detailsDiv = document.createElement("div");
+        detailsDiv.innerHTML = `
             <div class="card h-100" style="width: 18rem;">
-                <img src="${element.flags.png}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Bandera de ${element.name.common}">
+                <img src="${element.image}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="${element.name}">
                 <div class="card-body d-flex flex-column">
-                    <h4 class="card-title">Continente</h4>
-                    <h6 class="card-title">${element.continents[0]}</h6>
-                    <h4 class="card-title">Capital</h4>
-                    <h6 class="card-title">${element.capital ? element.capital[0] : "No disponible"}</h6>
-                    <h4 class="card-title">Población</h4>
-                    <h6 class="card-title">${element.population}</h6>
-                    <h4 class="card-title">Lenguaje oficial</h4>
-                    <h6 class="card-title">${leng.join(", ")}</h6>
-                    <h4 class="card-title">Zona horaria</h4>
-                    <h6 class="card-title">${element.timezones[0]}</h6>
+                    <h4 class="card-title">${element.name}</h4>
+                    <h6 class="card-text">Status: ${element.status}</h6>
+                    <h6 class="card-text">Species: ${element.species}</h6>
+                    <h6 class="card-text">Gender: ${element.gender}</h6>
+                    <h6 class="card-text">Origin: ${element.origin.name}</h6>
                     <button id="return" class="btn btn-primary mt-3">Return</button>
-                    <button id="showMorePopulation" class="btn btn-secondary mt-2">Obtener países con más población</button>
                 </div>
             </div>
-        `;" */
+        `;
 
-        capitalDiv.querySelector("#return").addEventListener("click", () => renderCountries(currentPage));
-        capitalDiv.querySelector("#showMorePopulation").addEventListener("click", () => ea(element.population));
-
-        container.appendChild(capitalDiv);
-    }
-
-    async function ea(poblacion) {
-        container.innerHTML = "";
-        const filteredCountries = result
-            .filter(country => country.population > poblacion)
-            .sort((a, b) => (a.name.common > b.name.common ? 1 : -1));
-
-        filteredCountries.forEach(element => {
-            let div = document.createElement("div");
-            div.classList.add("col-md-3");
-            div.innerHTML = `
-                <div class="card h-100" style="width: 18rem;">
-                    <img src="${element.flags.png}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Bandera de ${element.name.common}">
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">${element.name.common}</h5>
-                    </div>
-                </div>
-            `;
-
-            container.appendChild(div);
-        });
+        detailsDiv.querySelector("#return").addEventListener("click", () => renderCountries(currentPage));
+        container.appendChild(detailsDiv);
     }
 
     renderCountries(currentPage);
